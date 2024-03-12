@@ -1,49 +1,48 @@
-struct pt{
-	ld x, y;
-	pt(){}
-	pt(ld x, ld y): x(x), y(y){}
-	pt(ld ang): x(cos(ang)), y(sin(ang)){}  // Polar unit point: ang(randians)
-  // ------- BASIC OPERATORS -------  //        
-  pt operator+(pt p){ return pt(x+p.x, y+p.y); }
-	pt operator-(pt p){ return pt(x-p.x, y-p.y); }
-	pt operator*(ld t){ return pt(x*t, y*t); }
-	pt operator/(ld t){ return pt(x/t, y/t); }
-	ld operator*(pt p){ return x*p.x + y*p.y; }
-	ld operator%(pt p){ return x*p.y - y*p.x; }
-  // ------- COMPARISON OPERATORS -------  // 
-  bool operator==(pt p){ return abs(x - p.x) <= eps && abs(y - p.y) <= eps; }
-	bool operator<(pt p)const{ // for sort, convex hull/set/map
-		return x < p.x - eps || (abs(x - p.x) <= eps && y < p.y - eps); }
-	bool operator!=(pt p){ return !operator==(p); }
-  // -------------- NORMS --------------  // 
-	ld norm2(){ return *this**this; }
-	ld norm(){ return sqrt(norm2()); }
-	pt unit(){ return *this/norm(); }
-	// ------------ SIDE, LEFT------------ //
-  ld side(pt p, pt q){ return (q-p) % (*this-p); }// C is: >0 L, ==0 on AB, <0 R
-	bool left(pt p, pt q){ // Left of directed line PQ? (eps == 0 if integer)
-		return side(p, q) > eps; } // (change to >= -eps to accept collinear)
-  // -------------- ANGLES -------------- //
-  ld angle(){ return atan2(y, x); } // Angle from origin, in [-pi, pi]
-  ld min_angle(pt p){ return acos(*this*p / (norm()*p.norm())); } // In [0, pi]
-  ld angle(pt a, pt b, bool CW){ // Angle< AB(*this) > in direction CW
-    ld ma = (a - b).min_angle(*this - b);
-    return side(a, b) * (CW ? -1 : 1) <= 0 ? ma : 2*pi - ma; }
-  bool in_angle(pt a, pt b, pt c, bool CW=1){ // Is pt inside infinite angle ABC 
-    return angle(a, b, CW) <= c.angle(a, b, CW); } // From AB to AC in CW direction
-  // -------------- ROTATIONS -------------- //
-	pt rot(pt p){ return pt(*this % p,*this * p); }// use ccw90(1,0), cw90(-1,0)
-	pt rot(ld ang){ return rot(pt(sin(ang), cos(ang))); } // CCW, ang (radians)
-	pt rot_around(ld ang, pt p){ return p + (*this - p).rot(ang); }
-  pt perp(){ return rot(pt(1, 0)); }
-  // -------------- SEGMENTS -------------- //
-  bool in_disk(pt p, pt q){ return (p - *this) * (q - *this) <= 0; }
-  bool on_segment(pt p, pt q){ return side(p, q) == 0 && in_disk(p, q); }
-};
-void segment_intersection(pt a, pt b, pt c, pt d, vector<pt>& out){ // AB y CD
-  ld sa = a.side(c, d), sb = b.side(c, d);
-  ld sc = c.side(a, b), sd = d.side(a, b);
-  if(sa*sb < 0 && sc*sd < 0) out.pb((a*sb - b*sa) / (sb-sa)); // proper cut
-  for(pt p : {c, d}) if(p.on_segment(a, b)) out.pb(p);
-  for(pt p : {a, b}) if(p.on_segment(c, d)) out.pb(p);
+// UVA 1184 - AC
+// https://uva.onlinejudge.org/index.php?option=onlinejudge&Itemid=99999999&category=246&page=show_problem&problem=3625
+#include <bits/stdc++.h>
+#define pb push_back
+#define mp make_pair
+#define fst first
+#define snd second
+#define SZ(x) int((x).size())
+#define fore(i,a,b) for(int i=a,to=b;i<to;++i)
+using namespace std;
+typedef long long ll;
+
+#define MAXN 128
+#define MAXM 128
+
+vector<int> g[MAXN]; // [0,n)->[0,m)
+int n,m;
+int mat[MAXM];bool vis[MAXN];
+int match(int x){
+	if(vis[x])return 0;
+	vis[x]=true;
+	for(int y:g[x])if(mat[y]<0||match(mat[y])){mat[y]=x;return 1;}
+	return 0;
+}
+vector<pair<int,int> > max_matching(){
+	vector<pair<int,int> > r;
+	memset(mat,-1,sizeof(mat));
+	fore(i,0,n)memset(vis,false,sizeof(vis)),match(i);
+	fore(i,0,m)if(mat[i]>=0)r.pb({mat[i],i});
+	return r;
+}
+
+int main(){
+	int tn;
+	scanf("%d",&tn);
+	while(tn--){
+		int e;
+		scanf("%d%d",&n,&e);m=n;
+		while(e--){
+			int x,y;
+			scanf("%d%d",&x,&y);x--;y--;
+			g[x].pb(y);
+		}
+		printf("%d\n",n-SZ(max_matching()));
+		fore(i,0,n)g[i].clear();
+	}
+	return 0;
 }
